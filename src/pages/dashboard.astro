@@ -1,0 +1,883 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="ListIPs Dashboard"
+  description="Manage ListIPs firewall IP/CIDR lists, raw URLs, sync sources, and private token settings."
+  canonicalPath="/dashboard/"
+  noindex={true}
+>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand-lockup" href="/" aria-label="ListIPs home">
+        <img class="brand-logo" src="/images/logo.png" alt="ListIPs" width="300" height="73" decoding="sync" fetchpriority="high" />
+      </a>
+      <div class="topbar-actions">
+        <span id="status-line" class="status-badge">Checking session...</span>
+        <span id="quota-chip" class="user-chip">0/100 lists</span>
+        <a id="user-chip" class="button secondary small" href="/settings">Loading</a>
+        <button id="logout-button" class="button secondary small" type="button">Log out</button>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <aside class="list-panel">
+        <div class="panel-heading">
+          <h2>Published lists</h2>
+          <button id="new-list-button" class="button primary small" type="button">New</button>
+        </div>
+        <div id="list-items" class="list-items"></div>
+      </aside>
+
+      <section class="editor-panel">
+        <form id="list-form" class="list-form">
+          <input type="hidden" id="list-id" />
+
+          <div class="form-grid">
+            <label>
+              Name
+              <input id="list-name" name="name" autocomplete="off" required maxlength="80" aria-describedby="name-issues" />
+              <span id="name-issues" class="field-issues" aria-live="polite" hidden></span>
+            </label>
+            <label>
+              Slug
+              <input id="list-slug" name="slug" autocomplete="off" required pattern="[a-z0-9][a-z0-9-]{0,61}[a-z0-9]?" aria-describedby="slug-issues" />
+              <span id="slug-issues" class="field-issues" aria-live="polite" hidden></span>
+            </label>
+            <label>
+              Visibility
+              <select id="list-visibility" name="visibility">
+                <option value="public">Public URL</option>
+                <option value="private:always">Private token URL - Always visible token</option>
+                <option value="private:one_time">Private token URL - One-time visible token</option>
+              </select>
+            </label>
+            <label>
+              Description
+              <input id="list-description" name="description" autocomplete="off" maxlength="240" aria-describedby="description-issues" />
+              <span id="description-issues" class="field-issues" aria-live="polite" hidden></span>
+            </label>
+          </div>
+
+          <div class="textarea-grid">
+            <div class="field-stack">
+              <label>
+                Entries
+                <span class="code-editor">
+                  <span id="entries-line-numbers" class="line-numbers" aria-hidden="true">1</span>
+                  <textarea id="list-content" class="entries-textarea code-editor-input" name="content" spellcheck="false" rows="10" placeholder="# Office ranges&#10;192.0.2.10&#10;198.51.100.0/24&#10;2001:db8::/32" aria-describedby="entries-issues validation-message"></textarea>
+                </span>
+              </label>
+              <div id="entries-issues" class="validation-panel" aria-live="polite" hidden></div>
+            </div>
+
+            <div class="field-stack">
+              <label>
+                External sources
+                <span class="code-editor">
+                  <span id="sources-line-numbers" class="line-numbers" aria-hidden="true">1</span>
+                  <textarea id="external-sources" class="sources-textarea code-editor-input" name="externalSources" spellcheck="false" rows="10" placeholder="https://www.cloudflare.com/ips-v4&#10;https://www.cloudflare.com/ips-v6" aria-describedby="sources-issues sync-status"></textarea>
+                </span>
+              </label>
+              <div id="sources-issues" class="validation-panel" aria-live="polite" hidden></div>
+            </div>
+          </div>
+
+          <div class="editor-meta">
+            <span id="entry-count">0 entries</span>
+            <span id="validation-message">Published output only includes # comments and valid IP/CIDR entries.</span>
+          </div>
+          <div class="editor-meta">
+            <span id="source-count">0 sources</span>
+            <span id="sync-status">External sync supports cloudflare.com, githubusercontent.com, and amazonaws.com.</span>
+          </div>
+
+          <div class="raw-url-box" id="raw-url-box" hidden>
+            <div>
+              <span class="label">Raw URL</span>
+              <code id="raw-url"></code>
+            </div>
+            <button id="copy-raw-url" class="button secondary small" type="button">Copy</button>
+          </div>
+          <p class="fine-print">Raw endpoints are edge cached for up to 1 minute after edits.</p>
+
+          <div class="form-actions">
+            <button id="save-list-button" class="button primary" type="submit">Save list</button>
+            <button id="rotate-token-button" class="button secondary" type="button">Rotate token</button>
+            <button id="delete-list-button" class="button danger" type="button">Delete</button>
+          </div>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    // @ts-nocheck
+    import ipaddr from 'ipaddr.js';
+
+    const COMMENT_LINE = /^#[ A-Za-z0-9._:\/,+()[\]-]{0,99}$/;
+    const IP_CIDR_CHARS = /^[0-9A-Fa-f:.]+(?:\/[0-9]{1,3})?$/;
+    const ALLOWED_SOURCE_PATTERNS = ['*.cloudflare.com', '*.githubusercontent.com', '*.amazonaws.com'];
+
+    const state = {
+      user: null,
+      lists: [],
+      selectedId: null,
+      currentList: null,
+      demo: false,
+      validation: { valid: false, firstInvalid: null }
+    };
+
+    const isLocalPreview = ['localhost', '127.0.0.1'].includes(location.hostname);
+
+    const statusLine = document.querySelector('#status-line');
+    const userChip = document.querySelector('#user-chip');
+    const quotaChip = document.querySelector('#quota-chip');
+    const listItems = document.querySelector('#list-items');
+    const form = document.querySelector('#list-form');
+    const fields = {
+      id: document.querySelector('#list-id'),
+      name: document.querySelector('#list-name'),
+      slug: document.querySelector('#list-slug'),
+      description: document.querySelector('#list-description'),
+      visibility: document.querySelector('#list-visibility'),
+      content: document.querySelector('#list-content')
+    };
+
+    const externalSources = document.querySelector('#external-sources');
+    const rawUrlBox = document.querySelector('#raw-url-box');
+    const rawUrl = document.querySelector('#raw-url');
+    const copyRawUrl = document.querySelector('#copy-raw-url');
+    const entryCount = document.querySelector('#entry-count');
+    const sourceCount = document.querySelector('#source-count');
+    const syncStatus = document.querySelector('#sync-status');
+    const validationMessage = document.querySelector('#validation-message');
+    const rotateTokenButton = document.querySelector('#rotate-token-button');
+    const saveListButton = document.querySelector('#save-list-button');
+    const issueEls = {
+      name: document.querySelector('#name-issues'),
+      slug: document.querySelector('#slug-issues'),
+      description: document.querySelector('#description-issues'),
+      entries: document.querySelector('#entries-issues'),
+      sources: document.querySelector('#sources-issues')
+    };
+    const lineNumberGutters = {
+      entries: document.querySelector('#entries-line-numbers'),
+      sources: document.querySelector('#sources-line-numbers')
+    };
+
+    init();
+
+    async function init() {
+      try {
+        const session = await api('/api/auth/me');
+        state.user = session.user;
+        userChip.textContent = state.user.username;
+        quotaChip.textContent = `${session.usage.listCount}/${state.user.listQuota} lists`;
+        await loadLists();
+        setStatus('Ready');
+      } catch {
+        if (isLocalPreview) {
+          startDemoMode();
+        } else {
+          location.href = '/login';
+        }
+      }
+    }
+
+    async function loadLists(options = {}) {
+      if (state.demo) {
+        renderLists();
+        if (options.select === false) return;
+        if (state.lists.length > 0) selectList(state.selectedId ?? state.lists[0].id);
+        else newList();
+        return;
+      }
+
+      const payload = await api('/api/lists');
+      state.lists = payload.lists;
+      renderLists();
+      if (options.select === false) return;
+      if (state.lists.length > 0) selectList(state.selectedId ?? state.lists[0].id);
+      else newList();
+    }
+
+    function renderLists() {
+      listItems.innerHTML = '';
+      if (!fields.id.value && state.currentList) {
+        const draft = draftListSummary();
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'list-item active draft';
+        button.innerHTML = `<strong>${escapeHtml(draft.name)}</strong><span>${draft.itemCount} entries · ${draft.visibilityLabel} · unsaved</span>`;
+        button.addEventListener('click', () => fields.name.focus());
+        listItems.append(button);
+      }
+
+      for (const list of state.lists) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `list-item ${list.id === state.selectedId ? 'active' : ''}`;
+        button.innerHTML = `<strong>${escapeHtml(list.name)}</strong><span>${list.itemCount} entries · ${visibilityLabel(list)}</span>`;
+        button.addEventListener('click', () => selectList(list.id));
+        listItems.append(button);
+      }
+    }
+
+    async function selectList(id) {
+      state.selectedId = id;
+      setStatus('Ready');
+      renderLists();
+      if (state.demo) {
+        fillForm(state.lists.find((list) => list.id === id) ?? state.lists[0]);
+        return;
+      }
+
+      const payload = await api(`/api/lists/${id}`);
+      fillForm(payload.list);
+    }
+
+    function fillForm(list) {
+      state.currentList = list;
+      fields.id.value = list.id ?? '';
+      fields.name.value = list.name ?? '';
+      fields.slug.value = list.slug ?? '';
+      fields.description.value = list.description ?? '';
+      fields.visibility.value = visibilityOption(list);
+      fields.content.value = list.content ?? '';
+      externalSources.value = formatSources(list.externalSources ?? []);
+      renderRawUrl(list);
+      syncStatus.textContent = syncStatusText(list);
+      updateValidationUI();
+      updateVisibilityHint();
+    }
+
+    function newList() {
+      state.selectedId = null;
+      const suffix = String(Date.now()).slice(-6);
+      state.currentList = null;
+      fillForm({
+        name: 'New List',
+        slug: `new-list-${suffix}`,
+        visibility: 'public',
+        privateTokenPolicy: 'always',
+        content: '# Office ranges\n192.0.2.10\n'
+      });
+      renderLists();
+      setStatus('Creating a new list');
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const validation = updateValidationUI();
+      if (!validation.valid) {
+        setStatus('Fix validation issues before saving.');
+        validation.firstInvalid?.focus();
+        return;
+      }
+
+      setStatus('Saving...');
+
+      const body = {
+        ...visibilityPayload(),
+        name: fields.name.value,
+        slug: fields.slug.value,
+        description: fields.description.value,
+        content: fields.content.value,
+        externalSources: parseSources(externalSources.value)
+      };
+
+      try {
+        const id = fields.id.value;
+        if (state.demo) {
+          const list = demoSaveList(id, body);
+          state.selectedId = list.id;
+          fillForm(list);
+          renderLists();
+          setStatus('Demo preview saved locally. Sign in to persist changes.');
+          return;
+        }
+
+        const payload = await api(id ? `/api/lists/${id}` : '/api/lists', {
+          method: id ? 'PUT' : 'POST',
+          body: JSON.stringify(body)
+        });
+        state.selectedId = payload.list.id;
+        fillForm(payload.list);
+        await loadLists({ select: false });
+        if (payload.syncQueued) syncStatus.textContent = 'External source sync is queued for this list.';
+        setStatus(payload.syncQueued
+          ? 'Saved. External source sync queued for this list.'
+          : payload.list.rawUrlTokenVisible && payload.list.privateTokenPolicy === 'one_time'
+          ? 'Saved. Copy the new private raw URL now; the token is shown only once.'
+          : 'Saved. Edge cache can take up to 1 minute to refresh.');
+      } catch (error) {
+        setStatus(error.message);
+      }
+    });
+
+    document.querySelector('#new-list-button').addEventListener('click', newList);
+    document.querySelector('#logout-button').addEventListener('click', async () => {
+      if (state.demo) {
+        setStatus('Demo preview is already signed out.');
+        return;
+      }
+
+      await api('/api/auth/logout', { method: 'POST' });
+      location.href = '/login';
+    });
+    copyRawUrl.addEventListener('click', async () => {
+      if (!rawUrl.textContent || copyRawUrl.disabled) return;
+      await navigator.clipboard.writeText(rawUrl.textContent);
+      setStatus('Raw URL copied');
+    });
+    document.querySelector('#delete-list-button').addEventListener('click', async () => {
+      const id = fields.id.value;
+      if (!id) return;
+      if (!confirm(`Delete ${fields.name.value}?`)) return;
+      if (state.demo) {
+        state.lists = state.lists.filter((list) => list.id !== id);
+        state.selectedId = null;
+        await loadLists();
+        quotaChip.textContent = `${state.lists.length}/${state.user.listQuota} lists`;
+        setStatus('Deleted from local demo preview.');
+        return;
+      }
+
+      await api(`/api/lists/${id}`, { method: 'DELETE' });
+      state.selectedId = null;
+      await loadLists();
+      setStatus('Deleted');
+    });
+    document.querySelector('#rotate-token-button').addEventListener('click', async () => {
+      const id = fields.id.value;
+      if (!id || visibilityPayload().visibility !== 'private') return;
+      if (state.demo) {
+        const list = state.lists.find((item) => item.id === id);
+        if (!list) return;
+        list.rawUrl = `${list.rawUrlBase}?token=sec_demo_rotated_${Date.now().toString(36)}`;
+        list.rawUrlRequiresToken = false;
+        list.rawUrlTokenVisible = true;
+        fillForm(list);
+        setStatus('Demo token rotated locally.');
+        return;
+      }
+
+      const payload = await api(`/api/lists/${id}/rotate-token`, { method: 'POST' });
+      fillForm(payload.list);
+      setStatus(payload.list.privateTokenPolicy === 'one_time'
+        ? 'Token rotated. Copy the new private raw URL now; the token is shown only once.'
+        : 'Token rotated. The private URL will remain visible here.');
+    });
+    fields.name.addEventListener('input', () => {
+      if (!fields.id.value) fields.slug.value = slugify(fields.name.value);
+      updateValidationUI();
+      renderLists();
+    });
+    fields.slug.addEventListener('input', updateValidationUI);
+    fields.description.addEventListener('input', updateValidationUI);
+    fields.visibility.addEventListener('change', renderLists);
+    fields.visibility.addEventListener('change', updateVisibilityHint);
+    fields.content.addEventListener('input', () => {
+      updateValidationUI();
+      renderLists();
+    });
+    externalSources.addEventListener('input', updateValidationUI);
+    setupLineNumbers(fields.content, lineNumberGutters.entries);
+    setupLineNumbers(externalSources, lineNumberGutters.sources);
+
+    async function api(path, init = {}) {
+      const response = await fetch(path, {
+        credentials: 'include',
+        ...init,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(init.headers ?? {})
+        }
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error?.message ?? 'Request failed');
+      }
+      return payload;
+    }
+
+    function startDemoMode() {
+      state.demo = true;
+      state.user = {
+        username: 'local-preview',
+        listQuota: 100
+      };
+      state.lists = demoLists();
+      userChip.textContent = state.user.username;
+      quotaChip.textContent = `${state.lists.length}/${state.user.listQuota} lists`;
+      loadLists();
+      setStatus('Local demo preview. API calls are mocked because no authenticated Worker session is running.');
+    }
+
+    function demoLists() {
+      return [
+        {
+          id: 'demo-office',
+          name: 'Office Allowlist',
+          slug: 'office-allowlist',
+          description: 'Trusted office, VPN, and jump host ranges.',
+          visibility: 'private',
+          privateTokenPolicy: 'always',
+          itemCount: 5,
+          content: '# Office ranges\n192.0.2.10\n198.51.100.0/24\n# VPN exit\n2001:db8::/32',
+          externalSources: [
+            { url: 'https://www.cloudflare.com/ips-v4', enabled: true },
+            { url: 'https://www.cloudflare.com/ips-v6', enabled: true }
+          ],
+          rawUrlBase: 'https://listips.com/u/local-preview/office-allowlist',
+          rawUrl: 'https://listips.com/u/local-preview/office-allowlist?token=sec_demo_preview',
+          rawUrlRequiresToken: false,
+          rawUrlTokenVisible: true,
+          lastSyncStatus: 'ok',
+          lastSyncedAt: '2026-05-06T09:30:00Z'
+        },
+        {
+          id: 'demo-block',
+          name: 'Edge Blocklist',
+          slug: 'edge-blocklist',
+          description: 'Known bad scanners and temporary network blocks.',
+          visibility: 'public',
+          privateTokenPolicy: 'always',
+          itemCount: 4,
+          content: '# Scanner net\n203.0.113.0/24\n# Temporary block\n2001:db8:bad::/48',
+          externalSources: [],
+          rawUrlBase: 'https://listips.com/u/local-preview/edge-blocklist',
+          rawUrl: 'https://listips.com/u/local-preview/edge-blocklist',
+          rawUrlRequiresToken: false,
+          rawUrlTokenVisible: false
+        }
+      ];
+    }
+
+    function demoSaveList(id, body) {
+      const contentLines = body.content.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      const existing = state.lists.find((list) => list.id === id);
+      const next = {
+        ...(existing ?? {
+          id: `demo-${Date.now()}`,
+          rawUrlTokenVisible: body.visibility === 'private'
+        }),
+        ...body,
+        itemCount: contentLines.length,
+        rawUrlBase: `https://listips.com/u/local-preview/${body.slug}`,
+        rawUrl: body.visibility === 'public'
+          ? `https://listips.com/u/local-preview/${body.slug}`
+          : `https://listips.com/u/local-preview/${body.slug}?token=sec_demo_preview`,
+        rawUrlRequiresToken: false
+      };
+
+      if (existing) {
+        Object.assign(existing, next);
+        return existing;
+      }
+
+      state.lists.unshift(next);
+      quotaChip.textContent = `${state.lists.length}/${state.user.listQuota} lists`;
+      return next;
+    }
+
+    function updateValidationUI() {
+      const validation = validateForm();
+      state.validation = validation;
+
+      renderInlineIssue(fields.name, issueEls.name, validation.fields.name);
+      renderInlineIssue(fields.slug, issueEls.slug, validation.fields.slug);
+      renderInlineIssue(fields.description, issueEls.description, validation.fields.description);
+      renderIssuePanel(fields.content, issueEls.entries, 'Entries need attention', validation.entries.issues, validation.entries.warnings);
+      renderIssuePanel(externalSources, issueEls.sources, 'Sources need attention', validation.sources.issues, validation.sources.warnings);
+      updateLineNumbers(fields.content, lineNumberGutters.entries);
+      updateLineNumbers(externalSources, lineNumberGutters.sources);
+
+      entryCount.textContent = `${validation.entries.outputCount} entries`;
+      sourceCount.textContent = `${validation.sources.enabledCount} sources`;
+      validationMessage.textContent = validation.entries.summary;
+      if (!validation.sources.issues.length) {
+        syncStatus.textContent = state.currentList?.lastSyncStatus
+          ? syncStatusText(state.currentList)
+          : validation.sources.summary;
+      }
+      saveListButton.disabled = !validation.valid;
+      return validation;
+    }
+
+    function validateForm() {
+      const fieldsResult = validateFields();
+      const entriesResult = validateEntries(fields.content.value);
+      const sourcesResult = validateSources(externalSources.value);
+      const firstInvalid = fieldsResult.firstInvalid ?? entriesResult.firstInvalid ?? sourcesResult.firstInvalid;
+
+      return {
+        valid: !firstInvalid,
+        firstInvalid,
+        fields: fieldsResult.issues,
+        entries: entriesResult,
+        sources: sourcesResult
+      };
+    }
+
+    function validateFields() {
+      const issues = { name: '', slug: '', description: '' };
+      let firstInvalid = null;
+      const name = fields.name.value.trim();
+      const slug = fields.slug.value.trim();
+      const description = fields.description.value;
+
+      if (name.length < 1 || name.length > 80) {
+        issues.name = 'Name must be 1-80 characters.';
+        firstInvalid ??= fields.name;
+      }
+
+      if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(slug)) {
+        issues.slug = 'Use lowercase letters, numbers, and hyphens.';
+        firstInvalid ??= fields.slug;
+      }
+
+      if (description.length > 240) {
+        issues.description = 'Description must be 240 characters or fewer.';
+        firstInvalid ??= fields.description;
+      }
+
+      return { issues, firstInvalid };
+    }
+
+    function validateEntries(value) {
+      const lines = value.replace(/\r\n?/g, '\n').split('\n');
+      const issues = [];
+      const warnings = [];
+      const seenItems = new Set();
+      let ipCount = 0;
+      let outputCount = 0;
+
+      lines.forEach((rawLine, index) => {
+        const lineNumber = index + 1;
+        const line = rawLine.trim();
+        if (!line) return;
+
+        if (line.startsWith('#')) {
+          outputCount += 1;
+          if (!COMMENT_LINE.test(line.slice(0, 100))) {
+            issues.push({ line: lineNumber, message: 'Comment contains unsupported characters.' });
+          }
+          if (line.length > 100) {
+            warnings.push({ line: lineNumber, message: 'Comment will be cut to 100 characters.' });
+          }
+          return;
+        }
+
+        if (new TextEncoder().encode(line).byteLength > 128) {
+          issues.push({ line: lineNumber, message: 'Line exceeds 128 bytes.' });
+          return;
+        }
+
+        if (!IP_CIDR_CHARS.test(line)) {
+          issues.push({ line: lineNumber, message: 'Use an IPv4, IPv6, CIDR, or # comment.' });
+          return;
+        }
+
+        const normalized = normalizeIpOrCidr(line);
+        if (!normalized) {
+          issues.push({ line: lineNumber, message: 'Invalid IP or CIDR value.' });
+          return;
+        }
+
+        ipCount += 1;
+        if (seenItems.has(normalized)) {
+          warnings.push({ line: lineNumber, message: 'Duplicate entry will be ignored.' });
+          return;
+        }
+
+        seenItems.add(normalized);
+        outputCount += 1;
+      });
+
+      if (ipCount === 0) {
+        issues.push({ line: 1, message: 'Add at least one IP or CIDR entry.' });
+      }
+
+      const itemLimit = state.user?.itemQuotaPerList ?? 500;
+      if (outputCount > itemLimit) {
+        issues.push({ line: 1, message: `List exceeds the ${itemLimit} entry limit.` });
+      }
+
+      return {
+        issues,
+        warnings,
+        outputCount,
+        firstInvalid: issues.length ? fields.content : null,
+        summary: issues.length
+          ? `${issues.length} entry issue${issues.length === 1 ? '' : 's'} found.`
+          : warnings.length ? `${outputCount} entries. ${warnings.length} warning${warnings.length === 1 ? '' : 's'}.`
+            : `${outputCount} entries. Ready to publish.`
+      };
+    }
+
+    function validateSources(value) {
+      const lines = value.replace(/\r\n?/g, '\n').split('\n');
+      const issues = [];
+      const warnings = [];
+      const seen = new Set();
+      let enabledCount = 0;
+
+      lines.forEach((rawLine, index) => {
+        const lineNumber = index + 1;
+        const source = rawLine.trim();
+        if (!source) return;
+        enabledCount += 1;
+
+        let url;
+        try {
+          url = new URL(source);
+        } catch {
+          issues.push({ line: lineNumber, message: 'Source must be a valid URL.' });
+          return;
+        }
+
+        if (url.protocol !== 'https:') {
+          issues.push({ line: lineNumber, message: 'Source must use https.' });
+        }
+
+        if (!hostMatchesAllowedSource(url.hostname)) {
+          issues.push({ line: lineNumber, message: 'Host must be cloudflare.com, githubusercontent.com, or amazonaws.com.' });
+        }
+
+        const normalized = url.toString();
+        if (seen.has(normalized)) {
+          warnings.push({ line: lineNumber, message: 'Duplicate source is listed more than once.' });
+        }
+        seen.add(normalized);
+      });
+
+      if (enabledCount > 5) {
+        issues.push({ line: 1, message: 'A list may have at most 5 external sources.' });
+      }
+
+      return {
+        issues,
+        warnings,
+        enabledCount,
+        firstInvalid: issues.length ? externalSources : null,
+        summary: issues.length
+          ? `${issues.length} source issue${issues.length === 1 ? '' : 's'} found.`
+          : enabledCount === 0 ? 'External sync supports cloudflare.com, githubusercontent.com, and amazonaws.com.'
+            : `${enabledCount} source${enabledCount === 1 ? '' : 's'} ready.`
+      };
+    }
+
+    function renderInlineIssue(field, target, message) {
+      field.classList.toggle('invalid', Boolean(message));
+      field.setAttribute('aria-invalid', message ? 'true' : 'false');
+      target.hidden = !message;
+      target.textContent = message;
+    }
+
+    function renderIssuePanel(field, target, title, issues, warnings) {
+      field.classList.toggle('invalid', issues.length > 0);
+      field.setAttribute('aria-invalid', issues.length ? 'true' : 'false');
+      const messages = [
+        ...issues.map((issue) => ({ ...issue, kind: 'error' })),
+        ...warnings.map((warning) => ({ ...warning, kind: 'warning' }))
+      ].slice(0, 6);
+
+      if (messages.length === 0) {
+        target.hidden = true;
+        target.innerHTML = '';
+        return;
+      }
+
+      const hiddenCount = issues.length + warnings.length - messages.length;
+      target.hidden = false;
+      target.innerHTML = `<strong>${escapeHtml(title)}</strong><ul>${messages.map((item) => (
+        `<li class="${item.kind === 'warning' ? 'warning' : ''}">Line ${item.line}: ${escapeHtml(item.message)}</li>`
+      )).join('')}${hiddenCount > 0 ? `<li class="warning">Plus ${hiddenCount} more.</li>` : ''}</ul>`;
+    }
+
+    function setupLineNumbers(field, gutter) {
+      if (!field || !gutter) return;
+      field.addEventListener('scroll', () => {
+        gutter.style.transform = `translateY(${-field.scrollTop}px)`;
+      });
+      updateLineNumbers(field, gutter);
+    }
+
+    function updateLineNumbers(field, gutter) {
+      const lineCount = Math.max(1, field.value.replace(/\r\n?/g, '\n').split('\n').length);
+      gutter.textContent = Array.from({ length: lineCount }, (_, index) => index + 1).join('\n');
+      gutter.style.transform = `translateY(${-field.scrollTop}px)`;
+    }
+
+    function updateVisibilityHint() {
+      const next = visibilityPayload();
+      rotateTokenButton.hidden = next.privateTokenPolicy !== 'one_time';
+
+      if (!fields.id.value) {
+        if (next.visibility === 'private') {
+          rawUrl.textContent = next.privateTokenPolicy === 'always'
+            ? 'Save this list to generate a private URL whose token stays visible in the dashboard.'
+            : 'Save this list to generate a private URL whose token is shown only once.';
+          copyRawUrl.disabled = true;
+          rawUrlBox.hidden = false;
+          rawUrlBox.classList.remove('attention');
+        } else {
+          rawUrl.textContent = '';
+          copyRawUrl.disabled = true;
+          rawUrlBox.hidden = true;
+          rawUrlBox.classList.remove('attention');
+        }
+        return;
+      }
+
+      if (fields.visibility.value === visibilityOption(state.currentList)) {
+        renderRawUrl(state.currentList);
+        return;
+      }
+
+      if (next.visibility === 'private' && state.currentList?.visibility === 'public') {
+        rawUrl.textContent = next.privateTokenPolicy === 'always'
+          ? 'Save this change to generate a private URL whose token stays visible in the dashboard.'
+          : 'Save this change to generate a private URL whose token is shown only once.';
+        copyRawUrl.disabled = true;
+        rawUrlBox.hidden = false;
+        rawUrlBox.classList.remove('attention');
+      }
+
+      if (next.visibility === 'public' && state.currentList?.visibility === 'private') {
+        rawUrl.textContent = `Save this change to publish ${state.currentList.rawUrlBase}. Existing private tokens will stop being used.`;
+        copyRawUrl.disabled = true;
+        rawUrlBox.hidden = false;
+        rawUrlBox.classList.remove('attention');
+      }
+
+      if (next.visibility === 'private' && state.currentList?.visibility === 'private') {
+        rawUrl.textContent = next.privateTokenPolicy === 'always'
+          ? 'Save this change to keep the private token visible. A new token may be generated if the current token is hidden.'
+          : 'Save this change to hide the token after this update. Rotate later to reveal a one-time token again.';
+        copyRawUrl.disabled = true;
+        rawUrlBox.hidden = false;
+        rawUrlBox.classList.remove('attention');
+      }
+    }
+
+    function renderRawUrl(list) {
+      if (list.rawUrl) {
+        rawUrl.textContent = list.rawUrl;
+        copyRawUrl.disabled = false;
+        rawUrlBox.hidden = false;
+        rawUrlBox.classList.toggle('attention', list.privateTokenPolicy === 'one_time' && list.rawUrlTokenVisible === true);
+      } else if (list.rawUrlRequiresToken) {
+        rawUrl.textContent = `Private URL token is hidden. Rotate token to generate a new URL for ${list.rawUrlBase}.`;
+        copyRawUrl.disabled = true;
+        rawUrlBox.hidden = false;
+        rawUrlBox.classList.remove('attention');
+      } else {
+        rawUrl.textContent = '';
+        copyRawUrl.disabled = true;
+        rawUrlBox.hidden = true;
+        rawUrlBox.classList.remove('attention');
+      }
+    }
+
+    function draftListSummary() {
+      const lines = fields.content.value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      return {
+        name: fields.name.value.trim() || 'New List',
+        visibilityLabel: visibilityLabel(visibilityPayload()),
+        itemCount: lines.length
+      };
+    }
+
+    function visibilityPayload() {
+      if (fields.visibility.value === 'private:one_time') {
+        return { visibility: 'private', privateTokenPolicy: 'one_time' };
+      }
+
+      if (fields.visibility.value === 'private:always') {
+        return { visibility: 'private', privateTokenPolicy: 'always' };
+      }
+
+      return { visibility: 'public', privateTokenPolicy: 'always' };
+    }
+
+    function visibilityOption(list) {
+      if (list?.visibility !== 'private') return 'public';
+      return list.privateTokenPolicy === 'one_time' ? 'private:one_time' : 'private:always';
+    }
+
+    function visibilityLabel(list) {
+      if (list.visibility !== 'private') return 'public';
+      return list.privateTokenPolicy === 'one_time' ? 'private · one-time token' : 'private · visible token';
+    }
+
+    function normalizeIpOrCidr(value) {
+      try {
+        if (value.includes('/')) {
+          const [addr, prefix] = ipaddr.parseCIDR(value);
+          return `${addr.toNormalizedString()}/${prefix}`;
+        }
+
+        return ipaddr.parse(value).toNormalizedString();
+      } catch {
+        return null;
+      }
+    }
+
+    function hostMatchesAllowedSource(hostname) {
+      const host = hostname.toLowerCase();
+      return ALLOWED_SOURCE_PATTERNS.some((pattern) => {
+        if (pattern.startsWith('*.')) {
+          const suffix = pattern.slice(2);
+          return host === suffix || host.endsWith(`.${suffix}`);
+        }
+
+        return host === pattern;
+      });
+    }
+
+    function setStatus(message) {
+      statusLine.textContent = message;
+    }
+
+    function slugify(value) {
+      return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63);
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[char]);
+    }
+
+    function parseSources(value) {
+      return value
+        .split(/\r?\n/)
+        .map((url) => url.trim())
+        .filter(Boolean)
+        .map((url) => ({ url, enabled: true }));
+    }
+
+    function formatSources(sources) {
+      return sources
+        .filter((source) => source.enabled !== false)
+        .map((source) => source.url)
+        .join('\n');
+    }
+
+    function syncStatusText(list) {
+      if (list.lastSyncStatus === 'queued') return 'External source sync is queued for this list.';
+      if (list.lastSyncStatus === 'ok') return `Last sync completed at ${list.lastSyncedAt ?? 'unknown time'}.`;
+      if (list.lastSyncStatus === 'failed') return `Last sync failed: ${list.lastSyncError ?? 'Unknown error'}`;
+      return 'External sync supports cloudflare.com, githubusercontent.com, and amazonaws.com.';
+    }
+  </script>
+</AppLayout>

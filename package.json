@@ -1,0 +1,33 @@
+{
+  "name": "listips",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "worker:dev": "wrangler dev --config worker/wrangler.toml",
+    "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
+    "worker:test": "vitest run worker/test",
+    "smoke:provision": "node worker/scripts/provision-smoke-fixtures.mjs",
+    "smoke:raw": "node worker/scripts/smoke-raw-production.mjs",
+    "benchmark:large-lists": "node worker/scripts/benchmark-large-lists.mjs",
+    "canary:large-artifact": "node worker/scripts/canary-large-artifact.mjs",
+    "quota:set-user": "node worker/scripts/set-user-quota.mjs",
+    "quota:audit": "node worker/scripts/audit-user-quotas.mjs",
+    "test": "npm run worker:test"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^13.3.1",
+    "astro": "^6.2.2",
+    "ipaddr.js": "^2.2.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@cloudflare/workers-types": "^4.20260425.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8",
+    "wrangler": "^4.84.1"
+  }
+}

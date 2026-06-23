@@ -1,0 +1,3 @@
+SESSION_SECRET="replace-with-a-long-random-local-secret"
+GITHUB_CLIENT_ID="replace-with-your-github-oauth-client-id"
+GITHUB_CLIENT_SECRET="replace-with-your-github-oauth-client-secret"

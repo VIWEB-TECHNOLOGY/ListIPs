@@ -1,0 +1,50 @@
+---
+import '../styles/global.css';
+
+const siteUrl = 'https://listips.com';
+const {
+  title = 'ListIPs',
+  description = 'Publish clean IP and CIDR lists for firewall automation, scripts, and edge delivery.',
+  canonicalPath = '/',
+  noindex = false,
+  image = '/images/logo-web.png'
+} = Astro.props;
+const canonicalUrl = new URL(canonicalPath, siteUrl).toString();
+const imageUrl = new URL(image, siteUrl).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
+    <meta name="theme-color" content="#0d1117" />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" href="/images/fav.png" />
+    <link rel="preload" href="/images/logo.png" as="image" />
+    <meta property="og:site_name" content="ListIPs" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={imageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={imageUrl} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <slot />
+    <script is:inline>
+      document.addEventListener('error', (event) => {
+        const target = event.target;
+        if (target instanceof HTMLImageElement && target.classList.contains('brand-logo')) {
+          target.hidden = true;
+        }
+      }, true);
+    </script>
+  </body>
+</html>

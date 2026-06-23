@@ -1,0 +1,31 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Sign in to ListIPs"
+  description="Sign in to ListIPs with GitHub to manage firewall IP/CIDR lists and private raw URL tokens."
+  canonicalPath="/login/"
+  noindex={true}
+>
+  <main class="auth-shell">
+    <section class="auth-panel">
+      <a class="brand-lockup" href="/" aria-label="ListIPs home">
+        <img class="brand-logo" src="/images/logo.png" alt="ListIPs" width="300" height="73" decoding="sync" fetchpriority="high" />
+      </a>
+      <p class="eyebrow">Operator access</p>
+      <h1>Sign in to manage lists</h1>
+      <p class="muted">Use GitHub to edit lists, rotate private URLs, and publish validated IP/CIDR output.</p>
+      <a class="button primary full" href="/api/auth/github/start">Continue with GitHub</a>
+      <p class="fine-print">Your raw list URLs keep working independently of this browser session.</p>
+    </section>
+  </main>
+
+  <script>
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((response) => {
+        if (response.ok) location.replace('/dashboard/');
+      })
+      .catch(() => {});
+  </script>
+</AppLayout>

@@ -1,0 +1,144 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="ListIPs Settings"
+  description="View ListIPs account details, usage, and limits."
+  canonicalPath="/settings/"
+  noindex={true}
+>
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand-lockup" href="/" aria-label="ListIPs home">
+        <img class="brand-logo" src="/images/logo.png" alt="ListIPs" width="300" height="73" decoding="sync" fetchpriority="high" />
+      </a>
+      <div class="topbar-actions">
+        <a class="button secondary small" href="/dashboard">Dashboard</a>
+        <button id="logout-button" class="button secondary small" type="button">Log out</button>
+      </div>
+    </header>
+
+    <section class="settings-grid">
+      <article class="settings-panel">
+        <h2>Account</h2>
+        <dl class="detail-list">
+          <div>
+            <dt>Username</dt>
+            <dd id="account-username">-</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd id="account-email">-</dd>
+          </div>
+          <div>
+            <dt>Provider</dt>
+            <dd id="account-provider">-</dd>
+          </div>
+          <div>
+            <dt>Account type</dt>
+            <dd id="account-type">-</dd>
+          </div>
+          <div>
+            <dt>Group</dt>
+            <dd id="account-group">-</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd id="account-status">-</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="settings-panel">
+        <h2>Usage</h2>
+        <div class="metric-grid">
+          <div class="metric">
+            <span>Lists</span>
+            <strong id="metric-lists">0/100</strong>
+          </div>
+          <div class="metric">
+            <span>Total output lines</span>
+            <strong id="metric-items">0</strong>
+          </div>
+          <div class="metric">
+            <span>Largest list</span>
+            <strong id="metric-max-items">0/500</strong>
+          </div>
+          <div class="metric">
+            <span>Synced lists</span>
+            <strong id="metric-synced">0</strong>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="settings-panel">
+      <h2>Limits</h2>
+      <div class="limit-list">
+        <div>
+          <strong id="limit-lists">100 lists</strong>
+          <span>Maximum lists this account can create.</span>
+        </div>
+        <div>
+          <strong id="limit-items">500 output lines per list</strong>
+          <span>Includes valid IP/CIDR entries and full-line comments. Oversized manual or synced lists fail with a clear error instead of being truncated.</span>
+        </div>
+        <div>
+          <strong id="limit-sources">5 external sources per list</strong>
+          <span>Sources must be enabled URLs from the configured allowlist: cloudflare.com, githubusercontent.com, or amazonaws.com.</span>
+        </div>
+        <div>
+          <strong id="limit-cache">60 second raw cache</strong>
+          <span>Raw public URLs and valid private token URLs are served through R2-backed publication and short edge caching.</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // @ts-nocheck
+    init();
+
+    async function init() {
+      try {
+        const payload = await api('/api/auth/account');
+        const account = payload.account;
+        document.querySelector('#account-username').textContent = account.username;
+        document.querySelector('#account-email').textContent = account.email;
+        document.querySelector('#account-provider').textContent = account.authProvider;
+        document.querySelector('#account-type').textContent = account.accountType;
+        document.querySelector('#account-group').textContent = account.accountGroup;
+        document.querySelector('#account-status').textContent = account.status;
+        document.querySelector('#metric-lists').textContent = `${account.usage.listCount}/${account.quotas.lists}`;
+        document.querySelector('#metric-items').textContent = String(account.usage.totalItems);
+        document.querySelector('#metric-max-items').textContent = `${account.usage.maxItemsInList}/${account.quotas.itemsPerList}`;
+        document.querySelector('#metric-synced').textContent = String(account.usage.syncedLists);
+        document.querySelector('#limit-lists').textContent = `${account.quotas.lists} lists`;
+        document.querySelector('#limit-items').textContent = `${account.quotas.itemsPerList} output lines per list`;
+      } catch {
+        location.href = '/login';
+      }
+    }
+
+    document.querySelector('#logout-button').addEventListener('click', async () => {
+      await api('/api/auth/logout', { method: 'POST' });
+      location.href = '/login';
+    });
+
+    async function api(path, init = {}) {
+      const response = await fetch(path, {
+        credentials: 'include',
+        ...init,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(init.headers ?? {})
+        }
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(payload?.error?.message ?? 'Request failed');
+      return payload;
+    }
+  </script>
+</AppLayout>

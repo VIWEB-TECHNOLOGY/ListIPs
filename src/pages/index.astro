@@ -1,0 +1,125 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="ListIPs - Firewall IP List Publishing"
+  description="Create, validate, sync, and publish clean IP/CIDR allowlists and blocklists for firewalls, scripts, and edge automation."
+  canonicalPath="/"
+>
+  <main class="home-page">
+    <header class="marketing-nav">
+      <a class="brand-lockup" href="/" aria-label="ListIPs home">
+        <img class="brand-logo" src="/images/logo.png" alt="ListIPs" width="300" height="73" decoding="sync" fetchpriority="high" />
+      </a>
+      <nav class="nav-actions" aria-label="Primary">
+        <a id="home-auth-link" class="button primary small" href="/login">Sign in</a>
+      </nav>
+    </header>
+
+    <section class="home-hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Firewall list publishing</p>
+        <h1>Publish firewall IP lists your stack can trust.</h1>
+        <p class="lede">
+          Build allowlists, blocklists, and vendor ranges in one place. ListIPs validates every line, syncs approved sources, and publishes raw text endpoints that firewalls and scripts can consume without extra glue.
+        </p>
+        <div class="home-actions">
+          <a class="button primary" href="/login">Continue with GitHub</a>
+          <a class="button secondary" href="/login">Open your workspace</a>
+          <a class="button secondary" href="https://github.com/VIWEB-TECHNOLOGY/ListIPs" rel="noopener noreferrer">Open source on GitHub</a>
+        </div>
+      </div>
+
+      <section class="product-preview" aria-label="ListIPs dashboard preview">
+        <div class="preview-toolbar">
+          <span class="preview-dot"></span>
+          <strong>office-allowlist</strong>
+          <span>Private token URL</span>
+        </div>
+        <div class="preview-grid">
+          <aside class="preview-list">
+            <span class="preview-item active">Office Allowlist <small>5 entries</small></span>
+            <span class="preview-item">Edge Blocklist <small>4 entries</small></span>
+            <span class="preview-item">Vendor Ranges <small>12 entries</small></span>
+          </aside>
+          <div class="preview-editor">
+            <div class="preview-meta">
+              <span>Validated output</span>
+              <strong>Ready</strong>
+            </div>
+            <pre><code># Office ranges
+192.0.2.10
+198.51.100.0/24
+# VPN exit
+2001:db8::/32</code></pre>
+            <div class="preview-url">
+              <span>Raw URL</span>
+              <code>listips.com/u/acme/office-allowlist?token=sec_...</code>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="value-strip" aria-label="ListIPs capabilities">
+      <div>
+        <strong>Open source</strong>
+        <span>ListIPs is released under the MIT License at <a href="https://github.com/VIWEB-TECHNOLOGY/ListIPs" rel="noopener noreferrer">VIWEB-TECHNOLOGY/ListIPs</a>.</span>
+      </div>
+      <div>
+        <strong>Clean raw output</strong>
+        <span>Only comments and valid IPv4, IPv6, and CIDR lines are published.</span>
+      </div>
+      <div>
+        <strong>Private or public delivery</strong>
+        <span>Use public URLs or one-time-visible private token endpoints.</span>
+      </div>
+      <div>
+        <strong>Source sync built in</strong>
+        <span>Pull approved upstream ranges and keep firewall clients on cached edge URLs.</span>
+      </div>
+    </section>
+
+    <section class="workflow-band">
+      <div class="section-heading">
+        <p class="eyebrow">How it works</p>
+        <h2>Write once. Serve everywhere.</h2>
+      </div>
+      <div class="workflow-grid">
+        <article>
+          <span>01</span>
+          <h3>Create a list</h3>
+          <p>Add manual entries, comments, and external sources for a specific firewall job.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Validate and sync</h3>
+          <p>ListIPs sanitizes output and keeps synced ranges inside the supported source policy.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Consume the raw URL</h3>
+          <p>Point HestiaCP, iptables, UFW, Nginx, or automation scripts at the edge-cached endpoint.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <span>Copyright &copy; {new Date().getFullYear()} ListIPs.</span>
+      <span>By <a href="https://viweb.net" rel="noopener noreferrer">ViWeb Technology</a>.</span>
+    </footer>
+  </main>
+
+  <script>
+    const authLink = document.querySelector('#home-auth-link');
+
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((response) => {
+        if (!response.ok || !(authLink instanceof HTMLAnchorElement)) return;
+        authLink.textContent = 'Dashboard';
+        authLink.href = '/dashboard/';
+      })
+      .catch(() => {});
+  </script>
+</AppLayout>

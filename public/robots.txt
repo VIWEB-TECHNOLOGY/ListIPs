@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /settings/
+Disallow: /login/
+
+Sitemap: https://listips.com/sitemap.xml
