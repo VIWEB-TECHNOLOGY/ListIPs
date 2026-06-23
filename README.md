@@ -60,6 +60,13 @@ npm run smoke:raw
 
 By default, smoke fixtures use the reserved `viweb-technology` username. Override `LISTIPS_SMOKE_USERNAME` for your own deployment.
 
+## Documentation
+
+- [System design](docs/design.md)
+- [Project context and product rules](docs/context.md)
+- [Performance and quota notes](docs/performance.md)
+- [Release checklist](docs/release-checklist.md)
+
 ## Cloudflare Setup
 
 Start from the example config:
