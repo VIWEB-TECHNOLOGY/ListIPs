@@ -14,13 +14,13 @@ describe('auth session tracking', () => {
     expect(isReservedOAuthUsername('VIWEB')).toBe(true);
     expect(isReservedOAuthUsername('viweb-technology')).toBe(true);
     expect(isReservedOAuthUsername('ViWeb Technology')).toBe(true);
-    expect(isReservedOAuthUsername('jaredchu')).toBe(false);
+    expect(isReservedOAuthUsername('example-admin')).toBe(false);
   });
 
   it('keeps existing OAuth usernames immutable when provider logins change', async () => {
     const env = createTestEnv();
 
-    await expect(resolveOAuthUsername(env, 'jaredchu', {
+    await expect(resolveOAuthUsername(env, 'renamed-login', {
       id: 'usr_1',
       username: 'alice'
     })).resolves.toBe('alice');

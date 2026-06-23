@@ -11,7 +11,13 @@ const config = {
   wranglerConfig: process.env.LISTIPS_SMOKE_WRANGLER_CONFIG ?? 'worker/wrangler.toml',
   database: process.env.LISTIPS_SMOKE_D1_DATABASE ?? 'listips',
   r2Bucket: process.env.LISTIPS_SMOKE_R2_BUCKET ?? 'listips-compiled',
-  username: process.env.LISTIPS_SMOKE_USERNAME ?? 'viweb-technology'
+  username: process.env.LISTIPS_SMOKE_USERNAME ?? 'viweb-technology',
+  tokens: {
+    alwaysManual: smokeToken('LISTIPS_SMOKE_TOKEN_ALWAYS_MANUAL', 'sec_local_smoke_always_manual'),
+    alwaysSynced: smokeToken('LISTIPS_SMOKE_TOKEN_ALWAYS_SYNCED', 'sec_local_smoke_always_synced'),
+    oneTimeManual: smokeToken('LISTIPS_SMOKE_TOKEN_ONE_TIME_MANUAL', 'sec_local_smoke_one_time_manual'),
+    oneTimeSynced: smokeToken('LISTIPS_SMOKE_TOKEN_ONE_TIME_SYNCED', 'sec_local_smoke_one_time_synced')
+  }
 };
 
 const userId = `usr_smoke_${config.username.replace(/[^a-z0-9]+/g, '_')}`;
@@ -41,7 +47,7 @@ const fixtures = [
     name: 'Smoke private always manual',
     visibility: 'private',
     privateTokenPolicy: 'always',
-    token: 'sec_viweb_technology_smoke_always_manual_2026',
+    token: config.tokens.alwaysManual,
     externalSources: [],
     content: '# smoke private always manual\n192.0.2.30\n'
   }),
@@ -50,7 +56,7 @@ const fixtures = [
     name: 'Smoke private always synced',
     visibility: 'private',
     privateTokenPolicy: 'always',
-    token: 'sec_viweb_technology_smoke_always_synced_2026',
+    token: config.tokens.alwaysSynced,
     externalSources: [{ url: 'https://www.cloudflare.com/ips-v4', enabled: true }],
     content: '# smoke private always synced\n192.0.2.40\n173.245.48.0/20\n'
   }),
@@ -59,7 +65,7 @@ const fixtures = [
     name: 'Smoke private one-time manual',
     visibility: 'private',
     privateTokenPolicy: 'one_time',
-    token: 'sec_viweb_technology_smoke_one_time_manual_2026',
+    token: config.tokens.oneTimeManual,
     externalSources: [],
     content: '# smoke private one-time manual\n192.0.2.50\n'
   }),
@@ -68,7 +74,7 @@ const fixtures = [
     name: 'Smoke private one-time synced',
     visibility: 'private',
     privateTokenPolicy: 'one_time',
-    token: 'sec_viweb_technology_smoke_one_time_synced_2026',
+    token: config.tokens.oneTimeSynced,
     externalSources: [{ url: 'https://www.cloudflare.com/ips-v4', enabled: true }],
     content: '# smoke private one-time synced\n192.0.2.60\n173.245.48.0/20\n'
   })
@@ -91,7 +97,7 @@ try {
 
   console.log(`Provisioned smoke fixtures for ${config.appOrigin}/u/${config.username}/`);
   for (const item of fixtures) {
-    console.log(`${item.slug}: ${rawUrl(item)}`);
+    console.log(`${item.slug}: ${displayRawUrl(item)}`);
   }
 } catch (error) {
   console.error(`Smoke fixture provisioning failed: ${error.message}`);
@@ -109,6 +115,10 @@ function fixture(input) {
     kvKey: `lists/${config.username}/${input.slug}`,
     itemCount: input.content.trimEnd().split('\n').length
   };
+}
+
+function smokeToken(envName, fallback) {
+  return process.env[envName] ?? fallback;
 }
 
 function setupSql() {
@@ -177,6 +187,12 @@ function putR2Object(item) {
 function rawUrl(item) {
   const url = new URL(`${config.appOrigin}/u/${config.username}/${item.slug}`);
   if (item.token) url.searchParams.set('token', item.token);
+  return url.toString();
+}
+
+function displayRawUrl(item) {
+  const url = new URL(rawUrl(item));
+  if (url.searchParams.has('token')) url.searchParams.set('token', 'redacted');
   return url.toString();
 }
 

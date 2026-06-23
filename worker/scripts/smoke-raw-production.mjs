@@ -11,7 +11,13 @@ const config = {
   privateUrl: envUrl('LISTIPS_SMOKE_PRIVATE_URL', null),
   expectedCacheSeconds: process.env.LISTIPS_SMOKE_CACHE_SECONDS ?? '60',
   expectedPublicSnippets: envList('LISTIPS_SMOKE_PUBLIC_EXPECTS'),
-  expectedPrivateSnippets: envList('LISTIPS_SMOKE_PRIVATE_EXPECTS')
+  expectedPrivateSnippets: envList('LISTIPS_SMOKE_PRIVATE_EXPECTS'),
+  tokens: {
+    alwaysManual: smokeToken('LISTIPS_SMOKE_TOKEN_ALWAYS_MANUAL', 'sec_local_smoke_always_manual'),
+    alwaysSynced: smokeToken('LISTIPS_SMOKE_TOKEN_ALWAYS_SYNCED', 'sec_local_smoke_always_synced'),
+    oneTimeManual: smokeToken('LISTIPS_SMOKE_TOKEN_ONE_TIME_MANUAL', 'sec_local_smoke_one_time_manual'),
+    oneTimeSynced: smokeToken('LISTIPS_SMOKE_TOKEN_ONE_TIME_SYNCED', 'sec_local_smoke_one_time_synced')
+  }
 };
 
 const results = [];
@@ -186,6 +192,10 @@ function envList(name) {
     .filter(Boolean);
 }
 
+function smokeToken(envName, fallback) {
+  return process.env[envName] ?? fallback;
+}
+
 function smokeFixtures() {
   return [
     {
@@ -202,27 +212,27 @@ function smokeFixtures() {
     {
       label: 'private always manual',
       slug: 'private-always-manual',
-      token: 'sec_viweb_technology_smoke_always_manual_2026',
+      token: config.tokens.alwaysManual,
       expectedItems: 2,
       expectedSnippets: ['# smoke private always manual', '192.0.2.30']
     },
     {
       label: 'private always synced',
       slug: 'private-always-synced',
-      token: 'sec_viweb_technology_smoke_always_synced_2026',
+      token: config.tokens.alwaysSynced,
       expectedSnippets: ['# smoke private always synced', '192.0.2.40', '173.245.48.0/20']
     },
     {
       label: 'private one-time manual',
       slug: 'private-one-time-manual',
-      token: 'sec_viweb_technology_smoke_one_time_manual_2026',
+      token: config.tokens.oneTimeManual,
       expectedItems: 2,
       expectedSnippets: ['# smoke private one-time manual', '192.0.2.50']
     },
     {
       label: 'private one-time synced',
       slug: 'private-one-time-synced',
-      token: 'sec_viweb_technology_smoke_one_time_synced_2026',
+      token: config.tokens.oneTimeSynced,
       expectedSnippets: ['# smoke private one-time synced', '192.0.2.60', '173.245.48.0/20']
     }
   ].map((item) => ({ ...item, url: fixtureUrl(item) }));

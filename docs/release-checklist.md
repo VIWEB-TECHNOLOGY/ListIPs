@@ -50,6 +50,11 @@ Provision or refresh the stable `viweb-technology` smoke account and raw fixture
 npm run smoke:provision
 ```
 
+Private fixture tokens are read from environment variables. For production, set
+`LISTIPS_SMOKE_TOKEN_ALWAYS_MANUAL`, `LISTIPS_SMOKE_TOKEN_ALWAYS_SYNCED`,
+`LISTIPS_SMOKE_TOKEN_ONE_TIME_MANUAL`, and `LISTIPS_SMOKE_TOKEN_ONE_TIME_SYNCED`
+from a private env file or secret manager rather than committing token values.
+
 Fixture smoke covers public/private, manual/synced, and both private token policies:
 
 ```bash
