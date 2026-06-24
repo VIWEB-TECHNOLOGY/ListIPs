@@ -70,6 +70,7 @@ a {
 .marketing-nav,
 .home-hero,
 .value-strip,
+.cloudflare-native-band,
 .workflow-band {
   width: min(100% - 40px, 1180px);
   margin: 0 auto;
@@ -249,6 +250,79 @@ a {
 
 .value-strip span {
   color: var(--muted);
+}
+
+.cloudflare-native-band {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(420px, 1.18fr);
+  gap: clamp(24px, 4vw, 54px);
+  align-items: start;
+  padding: 64px 0 10px;
+}
+
+.cloudflare-copy {
+  display: grid;
+  gap: 14px;
+}
+
+.cloudflare-copy h2 {
+  max-width: 12ch;
+}
+
+.cloudflare-copy p:last-of-type {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--muted-strong);
+}
+
+.cloudflare-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.cloudflare-buttons a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 35px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.cloudflare-buttons img {
+  display: block;
+  height: 33px;
+  width: auto;
+}
+
+.cloudflare-services {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cloudflare-services li {
+  display: grid;
+  gap: 5px;
+  min-height: 82px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgb(22 27 34 / 72%);
+  padding: 15px;
+}
+
+.cloudflare-services strong {
+  color: #f6b26b;
+}
+
+.cloudflare-services span {
+  color: var(--muted);
+  font-size: 0.94rem;
 }
 
 .workflow-band {
@@ -893,6 +967,7 @@ code {
 @media (max-width: 940px) {
   .home-hero,
   .value-strip,
+  .cloudflare-native-band,
   .workflow-grid {
     grid-template-columns: 1fr;
   }
@@ -950,6 +1025,7 @@ code {
   .home-hero,
   .marketing-nav,
   .value-strip,
+  .cloudflare-native-band,
   .workflow-band,
   .site-footer {
     width: min(100% - 28px, 1180px);
@@ -974,5 +1050,9 @@ code {
 
   .home-actions .button {
     width: 100%;
+  }
+
+  .cloudflare-services {
+    grid-template-columns: 1fr;
   }
 }

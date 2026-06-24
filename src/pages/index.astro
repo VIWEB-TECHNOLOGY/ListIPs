@@ -80,6 +80,35 @@ import AppLayout from '../layouts/AppLayout.astro';
       </div>
     </section>
 
+    <section class="cloudflare-native-band" aria-labelledby="cloudflare-native-title">
+      <div class="cloudflare-copy">
+        <p class="eyebrow">Cloudflare native</p>
+        <h2 id="cloudflare-native-title">Built for edge-hosted firewall automation.</h2>
+        <p>
+          ListIPs runs on Cloudflare's developer platform: static frontend, Worker API, edge-cached raw delivery, managed storage, background sync, and rate limiting.
+        </p>
+        <div class="cloudflare-buttons" aria-label="Cloudflare project links">
+          <a href="https://cloudflare.com" rel="noopener noreferrer">
+            <img src="https://workers.cloudflare.com/built-with-cloudflare.svg" alt="Built with Cloudflare" width="152" height="33" loading="lazy" />
+          </a>
+          <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/VIWEB-TECHNOLOGY/ListIPs" rel="noopener noreferrer">
+            <img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare" width="165" height="33" loading="lazy" />
+          </a>
+        </div>
+      </div>
+
+      <ul class="cloudflare-services" aria-label="Cloudflare services used by ListIPs">
+        <li><strong>Workers</strong><span>API and raw list delivery</span></li>
+        <li><strong>Pages</strong><span>Static Astro frontend</span></li>
+        <li><strong>D1</strong><span>Users, sessions, and metadata</span></li>
+        <li><strong>R2</strong><span>Compiled list artifacts</span></li>
+        <li><strong>Queues</strong><span>External source sync jobs</span></li>
+        <li><strong>Durable Objects</strong><span>Atomic rate limits</span></li>
+        <li><strong>KV</strong><span>Rate-limit fallback storage</span></li>
+        <li><strong>Cron Triggers</strong><span>Scheduled sync refreshes</span></li>
+      </ul>
+    </section>
+
     <section class="workflow-band">
       <div class="section-heading">
         <p class="eyebrow">How it works</p>
