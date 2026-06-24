@@ -1,5 +1,7 @@
 # ListIPs
 
+[![Built with Cloudflare](https://workers.cloudflare.com/built-with-cloudflare.svg)](https://cloudflare.com)
+
 Open-source IP/CIDR allowlist and blocklist publishing for firewall automation.
 
 ListIPs lets operators create validated plain-text IP lists, optionally sync approved upstream sources, and serve raw public or tokenized private URLs for tools such as firewalls, HestiaCP, iptables, UFW, Nginx, scripts, and monitoring systems.
