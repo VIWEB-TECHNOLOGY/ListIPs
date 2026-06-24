@@ -7,6 +7,8 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
+    "deploy": "npm run db:migrations:apply && wrangler deploy",
+    "db:migrations:apply": "wrangler d1 migrations apply DB --remote",
     "worker:dev": "wrangler dev --config worker/wrangler.toml",
     "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
     "worker:test": "vitest run worker/test",
@@ -17,6 +19,40 @@
     "quota:set-user": "node worker/scripts/set-user-quota.mjs",
     "quota:audit": "node worker/scripts/audit-user-quotas.mjs",
     "test": "npm run worker:test"
+  },
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "D1 database for users, sessions, list metadata, and sync records."
+      },
+      "LISTS_KV": {
+        "description": "KV namespace used as the fallback store for rate-limit counters."
+      },
+      "LISTS_R2": {
+        "description": "R2 bucket for compiled raw allowlist and blocklist artifacts."
+      },
+      "RATE_LIMIT_COUNTER": {
+        "description": "Durable Object binding for atomic request rate limiting."
+      },
+      "SYNC_QUEUE": {
+        "description": "Queue for background external source sync jobs."
+      },
+      "APP_ORIGIN": {
+        "description": "Public frontend origin for CORS and generated URLs, for example `https://your-domain.example`."
+      },
+      "GITHUB_OAUTH_REDIRECT_URI": {
+        "description": "GitHub OAuth callback URL, usually `<APP_ORIGIN>/api/auth/github/callback` for same-origin deployments."
+      },
+      "SESSION_SECRET": {
+        "description": "Generate a long random value, for example with `openssl rand -hex 32`."
+      },
+      "GITHUB_CLIENT_ID": {
+        "description": "Client ID from your GitHub OAuth app."
+      },
+      "GITHUB_CLIENT_SECRET": {
+        "description": "Client secret from your GitHub OAuth app."
+      }
+    }
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.3.1",

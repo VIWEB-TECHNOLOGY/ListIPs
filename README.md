@@ -1,6 +1,7 @@
 # ListIPs
 
 [![Built with Cloudflare](https://workers.cloudflare.com/built-with-cloudflare.svg)](https://cloudflare.com)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/VIWEB-TECHNOLOGY/ListIPs)
 
 Open-source IP/CIDR allowlist and blocklist publishing for firewall automation.
 
@@ -70,6 +71,10 @@ By default, smoke fixtures use the reserved `viweb-technology` username. Overrid
 - [Release checklist](docs/release-checklist.md)
 
 ## Cloudflare Setup
+
+You can start with the Deploy to Cloudflare button above to provision the Worker API and raw delivery stack in your own Cloudflare account. The button uses the root `wrangler.toml` template and can provision the Worker bindings for D1, R2, KV, Queues, and Durable Objects. After deployment, configure a GitHub OAuth app and set the required Worker secrets.
+
+The Astro frontend is still deployed separately as a static site. For a full self-hosted deployment, deploy the frontend to Cloudflare Pages or another static host and set `APP_ORIGIN` plus `GITHUB_OAUTH_REDIRECT_URI` to match that public origin.
 
 Start from the example config:
 

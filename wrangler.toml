@@ -1,0 +1,51 @@
+name = "listips-api"
+main = "worker/src/index.ts"
+compatibility_date = "2026-05-05"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "listips"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[kv_namespaces]]
+binding = "LISTS_KV"
+id = "00000000000000000000000000000000"
+preview_id = "00000000000000000000000000000000"
+
+[[r2_buckets]]
+binding = "LISTS_R2"
+bucket_name = "listips-compiled"
+preview_bucket_name = "listips-compiled-preview"
+
+[[durable_objects.bindings]]
+name = "RATE_LIMIT_COUNTER"
+class_name = "RateLimitCounter"
+
+[[queues.producers]]
+binding = "SYNC_QUEUE"
+queue = "listips-external-sync"
+
+[[queues.consumers]]
+queue = "listips-external-sync"
+max_batch_size = 5
+max_batch_timeout = 5
+max_retries = 3
+
+[vars]
+APP_ORIGIN = "https://example.com"
+GITHUB_OAUTH_REDIRECT_URI = "https://example.com/api/auth/github/callback"
+RAW_LIST_CACHE_SECONDS = "60"
+OBSERVABILITY_SAMPLE_RATE = "0.01"
+MAX_LISTS_PER_USER = "100"
+MAX_LIST_ITEMS = "500"
+MAX_LIST_BODY_BYTES = "524288"
+EXTERNAL_SOURCE_ALLOWED_HOSTS = "*.cloudflare.com,*.githubusercontent.com,*.amazonaws.com"
+
+[triggers]
+crons = ["17 * * * *"]
+
+[[migrations]]
+tag = "v1_rate_limit_counter"
+new_sqlite_classes = ["RateLimitCounter"]
