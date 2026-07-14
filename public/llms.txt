@@ -1,0 +1,18 @@
+# ListIPs
+
+> ListIPs is an open source service for validating, synchronizing, and publishing IPv4, IPv6, and CIDR allowlists and blocklists as raw text URLs.
+
+## Public pages
+
+- [Home](https://listips.com/)
+- [Documentation](https://listips.com/docs/)
+- [About](https://listips.com/about/)
+- [Source code](https://github.com/VIWEB-TECHNOLOGY/ListIPs)
+
+## Product behavior
+
+- Published output contains valid IPv4, IPv6, CIDR, and full-line `#` comments.
+- Public list URL format: `https://listips.com/u/{username}/{list_slug}`
+- Private list URL format: `https://listips.com/u/{username}/{list_slug}?token=sec_...`
+- Private token URLs must be treated as credentials and should not be logged or shared.
+- ListIPs publishes raw list data; consuming systems remain responsible for applying firewall changes safely.

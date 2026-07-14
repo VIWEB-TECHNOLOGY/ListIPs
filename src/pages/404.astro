@@ -1,0 +1,26 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import MarketingFooter from '../components/MarketingFooter.astro';
+import MarketingHeader from '../components/MarketingHeader.astro';
+---
+
+<AppLayout
+  title="Page not found - ListIPs"
+  description="The requested ListIPs page could not be found."
+  canonicalPath="/404/"
+  noindex={true}
+>
+  <main id="main-content" class="home-page">
+    <MarketingHeader />
+    <section class="not-found-page">
+      <p class="eyebrow">404</p>
+      <h1>That page does not exist.</h1>
+      <p class="lede">Check the address, return to ListIPs, or read the publishing documentation.</p>
+      <div class="home-actions">
+        <a class="button primary" href="/">Go to the homepage</a>
+        <a class="button secondary" href="/docs/">Read the documentation</a>
+      </div>
+    </section>
+    <MarketingFooter />
+  </main>
+</AppLayout>

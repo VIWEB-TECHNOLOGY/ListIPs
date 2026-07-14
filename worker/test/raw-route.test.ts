@@ -43,6 +43,7 @@ describe('raw route', () => {
     expect(response.headers.get('X-ListIPs-Cache-Seconds')).toBe('60');
     expect(response.headers.get('X-ListIPs-Edge-Cache')).toBe('MISS');
     expect(response.headers.get('ETag')).toBe('"sha256:test-hash"');
+    expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, nosnippet');
 
     const conditional = await handleRaw(new Request('https://listips.test/u/alice/office', {
       headers: { 'If-None-Match': '"sha256:test-hash"' }

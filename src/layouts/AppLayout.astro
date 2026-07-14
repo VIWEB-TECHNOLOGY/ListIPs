@@ -2,15 +2,42 @@
 import '../styles/global.css';
 
 const siteUrl = 'https://listips.com';
+const siteName = 'ListIPs';
+const defaultDescription = 'Publish clean IP and CIDR lists for firewall automation, scripts, and edge delivery.';
 const {
   title = 'ListIPs',
-  description = 'Publish clean IP and CIDR lists for firewall automation, scripts, and edge delivery.',
+  description = defaultDescription,
   canonicalPath = '/',
   noindex = false,
-  image = '/images/logo-web.png'
+  image = '/images/logo-web.png',
+  imageAlt = 'ListIPs firewall IP list publishing',
+  jsonLd = []
 } = Astro.props;
 const canonicalUrl = new URL(canonicalPath, siteUrl).toString();
 const imageUrl = new URL(image, siteUrl).toString();
+const robots = noindex
+  ? 'noindex, follow'
+  : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+const baseStructuredData = [
+  {
+    '@type': 'Organization',
+    '@id': `${siteUrl}/#organization`,
+    name: 'ViWeb Technology',
+    url: 'https://viweb.net/'
+  },
+  {
+    '@type': 'WebSite',
+    '@id': `${siteUrl}/#website`,
+    name: siteName,
+    url: `${siteUrl}/`,
+    description: defaultDescription,
+    publisher: { '@id': `${siteUrl}/#organization` }
+  }
+];
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [...baseStructuredData, ...jsonLd]
+};
 ---
 
 <!doctype html>
@@ -19,24 +46,32 @@ const imageUrl = new URL(image, siteUrl).toString();
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
+    <meta name="robots" content={robots} />
     <meta name="theme-color" content="#0d1117" />
-    <link rel="canonical" href={canonicalUrl} />
-    <link rel="icon" href="/images/fav.png" />
+    {!noindex && <link rel="canonical" href={canonicalUrl} />}
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    {canonicalPath === '/' && <link rel="alternate" type="text/plain" title="ListIPs for automated readers" href="/llms.txt" />}
+    <link rel="icon" type="image/png" sizes="48x48" href="/images/fav.png" />
+    <link rel="apple-touch-icon" href="/images/icon.png" />
     <link rel="preload" href="/images/logo.png" as="image" />
-    <meta property="og:site_name" content="ListIPs" />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={imageUrl} />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={imageUrl} />
+    <meta name="twitter:image:alt" content={imageAlt} />
     <title>{title}</title>
+    {!noindex && <script is:inline type="application/ld+json" set:html={JSON.stringify(structuredData)} />}
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
     <slot />
     <script is:inline>
       document.addEventListener('error', (event) => {

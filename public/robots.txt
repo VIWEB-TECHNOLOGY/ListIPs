@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
-Disallow: /dashboard/
-Disallow: /settings/
-Disallow: /login/
+
+# Private application pages use page-level noindex directives. They remain
+# crawlable so compliant search engines can read those directives.
 
 Sitemap: https://listips.com/sitemap.xml

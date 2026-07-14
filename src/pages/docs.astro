@@ -1,0 +1,115 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import MarketingFooter from '../components/MarketingFooter.astro';
+import MarketingHeader from '../components/MarketingHeader.astro';
+
+const breadcrumbJsonLd = {
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://listips.com/' },
+    { '@type': 'ListItem', position: 2, name: 'Documentation', item: 'https://listips.com/docs/' }
+  ]
+};
+---
+
+<AppLayout
+  title="ListIPs Documentation - Publish Firewall IP Lists"
+  description="Learn how to create, validate, sync, and publish IPv4, IPv6, and CIDR allowlists or blocklists as stable raw text URLs."
+  canonicalPath="/docs/"
+  jsonLd={[breadcrumbJsonLd]}
+>
+  <main id="main-content" class="home-page">
+    <MarketingHeader current="docs" />
+
+    <article class="content-page">
+      <header class="content-hero">
+        <p class="eyebrow">Documentation</p>
+        <h1>Publish firewall IP lists as clean raw text.</h1>
+        <p class="lede">
+          ListIPs turns manually maintained entries and approved upstream sources into validated IPv4, IPv6, and CIDR output. Each list gets a stable URL for firewalls, scripts, and automation jobs.
+        </p>
+        <a class="button primary" href="/login/">Create a list with GitHub</a>
+      </header>
+
+      <nav class="page-toc" aria-label="On this page">
+        <strong>On this page</strong>
+        <a href="#workflow">Publishing workflow</a>
+        <a href="#format">Supported format</a>
+        <a href="#delivery">Raw URL delivery</a>
+        <a href="#sources">External sources</a>
+        <a href="#operations">Operational guidance</a>
+      </nav>
+
+      <section id="workflow" class="prose-section">
+        <p class="eyebrow">Workflow</p>
+        <h2>Create, validate, and publish</h2>
+        <ol class="steps-list">
+          <li><strong>Create a named list.</strong><span>Choose a URL slug, description, and public or private visibility.</span></li>
+          <li><strong>Add entries and sources.</strong><span>Enter IP addresses, CIDR ranges, full-line comments, and optional approved source URLs.</span></li>
+          <li><strong>Save validated output.</strong><span>Invalid lines are reported instead of being silently published.</span></li>
+          <li><strong>Consume the raw URL.</strong><span>Fetch the resulting text file from your firewall workflow or configuration management system.</span></li>
+        </ol>
+      </section>
+
+      <section id="format" class="prose-section">
+        <p class="eyebrow">Input and output</p>
+        <h2>Supported list format</h2>
+        <p>Published output contains only blank-free, line-oriented values in these categories:</p>
+        <ul>
+          <li>IPv4 addresses such as <code>192.0.2.10</code></li>
+          <li>IPv4 CIDR ranges such as <code>198.51.100.0/24</code></li>
+          <li>IPv6 addresses and CIDR ranges such as <code>2001:db8::/32</code></li>
+          <li>Full-line comments beginning with <code>#</code></li>
+        </ul>
+        <pre><code># Office and VPN ranges
+192.0.2.10
+198.51.100.0/24
+2001:db8::/32</code></pre>
+        <p>Comments and addresses count toward the account's configured output-line limit. Validation keeps malformed or mixed-content lines out of the published artifact.</p>
+      </section>
+
+      <section id="delivery" class="prose-section">
+        <p class="eyebrow">Delivery</p>
+        <h2>Public and private raw URLs</h2>
+        <p>A public list uses a stable path:</p>
+        <pre><code>https://listips.com/u/username/list-slug</code></pre>
+        <p>A private list adds a secret token to the URL:</p>
+        <pre><code>https://listips.com/u/username/list-slug?token=sec_...</code></pre>
+        <p>Treat a private URL like a credential: keep it out of source control, screenshots, analytics, and logs. Rotate the token if it is exposed.</p>
+        <p>Raw responses include cache and validation headers, including an ETag. A basic download can use conditional HTTP behavior provided by your client:</p>
+        <pre><code>curl --fail --silent --show-error \
+  https://listips.com/u/username/list-slug \
+  --output /path/to/firewall-list.txt</code></pre>
+        <p>ListIPs publishes the file; the consuming firewall or script remains responsible for applying it safely.</p>
+      </section>
+
+      <section id="sources" class="prose-section">
+        <p class="eyebrow">Synchronization</p>
+        <h2>Approved external sources</h2>
+        <p>Lists can combine manual entries with text sources from supported Cloudflare, GitHub raw-content, and Amazon AWS hosts. Source responses pass through the same validation and output limits as manual content.</p>
+        <p>Saving a source-enabled list queues background synchronization. Scheduled refreshes keep healthy configured lists current without making raw clients fetch upstream providers directly.</p>
+      </section>
+
+      <section id="operations" class="prose-section">
+        <p class="eyebrow">Operations</p>
+        <h2>Use lists safely</h2>
+        <ul>
+          <li>Stage firewall changes and keep a tested rollback path.</li>
+          <li>Review upstream ownership and scope before trusting an external range.</li>
+          <li>Use private URLs for sensitive list membership and rotate exposed tokens.</li>
+          <li>Monitor fetch failures before removing the last known-good local copy.</li>
+          <li>Validate the consuming tool's expected syntax; ListIPs serves addresses and CIDRs, not tool-specific commands.</li>
+        </ul>
+        <div class="content-cta">
+          <div>
+            <h2>Ready to publish a list?</h2>
+            <p>Sign in with GitHub, create a list, and copy its raw URL into your existing workflow.</p>
+          </div>
+          <a class="button primary" href="/login/">Open ListIPs</a>
+        </div>
+      </section>
+    </article>
+
+    <MarketingFooter />
+  </main>
+</AppLayout>

@@ -66,6 +66,7 @@ export function handleError(error: unknown): Response {
 
 export function applySecurityHeaders(headers: Headers): Headers {
   headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Robots-Tag', 'noindex, nofollow, nosnippet');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   headers.set('X-Frame-Options', 'DENY');

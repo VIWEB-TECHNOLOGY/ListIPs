@@ -1,0 +1,34 @@
+---
+const { current = '', checkAuth = false } = Astro.props;
+
+const links = [
+  { href: '/docs/', label: 'Documentation', key: 'docs' },
+  { href: '/about/', label: 'About', key: 'about' }
+];
+---
+
+<header class="marketing-nav">
+  <a class="brand-lockup" href="/" aria-label="ListIPs home">
+    <img class="brand-logo" src="/images/logo.png" alt="ListIPs" width="300" height="73" decoding="sync" fetchpriority="high" />
+  </a>
+  <nav class="nav-actions" aria-label="Primary navigation">
+    {links.map((link) => (
+      <a href={link.href} aria-current={current === link.key ? 'page' : undefined}>{link.label}</a>
+    ))}
+    <a id="home-auth-link" class="button primary small" href="/login/">Sign in</a>
+  </nav>
+</header>
+
+{checkAuth && (
+  <script>
+    const authLink = document.querySelector('#home-auth-link');
+
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((response) => {
+        if (!response.ok || !(authLink instanceof HTMLAnchorElement)) return;
+        authLink.textContent = 'Dashboard';
+        authLink.href = '/dashboard/';
+      })
+      .catch(() => {});
+  </script>
+)}

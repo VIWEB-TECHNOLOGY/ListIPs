@@ -8,13 +8,13 @@ import AppLayout from '../layouts/AppLayout.astro';
   canonicalPath="/settings/"
   noindex={true}
 >
-  <main class="app-shell">
+  <main id="main-content" class="app-shell">
     <header class="topbar">
       <a class="brand-lockup" href="/" aria-label="ListIPs home">
         <img class="brand-logo" src="/images/logo.png" alt="ListIPs" width="300" height="73" decoding="sync" fetchpriority="high" />
       </a>
       <div class="topbar-actions">
-        <a class="button secondary small" href="/dashboard">Dashboard</a>
+        <a class="button secondary small" href="/dashboard/">Dashboard</a>
         <button id="logout-button" class="button secondary small" type="button">Log out</button>
       </div>
     </header>

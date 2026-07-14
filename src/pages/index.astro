@@ -1,21 +1,30 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
+import MarketingFooter from '../components/MarketingFooter.astro';
+import MarketingHeader from '../components/MarketingHeader.astro';
+
+const softwareJsonLd = {
+  '@type': 'SoftwareApplication',
+  '@id': 'https://listips.com/#software',
+  name: 'ListIPs',
+  url: 'https://listips.com/',
+  description: 'Create, validate, sync, and publish IP and CIDR allowlists and blocklists as clean raw text endpoints.',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Any',
+  isAccessibleForFree: true,
+  codeRepository: 'https://github.com/VIWEB-TECHNOLOGY/ListIPs',
+  publisher: { '@id': 'https://listips.com/#organization' }
+};
 ---
 
 <AppLayout
   title="ListIPs - Firewall IP List Publishing"
   description="Create, validate, sync, and publish clean IP/CIDR allowlists and blocklists for firewalls, scripts, and edge automation."
   canonicalPath="/"
+  jsonLd={[softwareJsonLd]}
 >
-  <main class="home-page">
-    <header class="marketing-nav">
-      <a class="brand-lockup" href="/" aria-label="ListIPs home">
-        <img class="brand-logo" src="/images/logo.png" alt="ListIPs" width="300" height="73" decoding="sync" fetchpriority="high" />
-      </a>
-      <nav class="nav-actions" aria-label="Primary">
-        <a id="home-auth-link" class="button primary small" href="/login">Sign in</a>
-      </nav>
-    </header>
+  <main id="main-content" class="home-page">
+    <MarketingHeader checkAuth={true} />
 
     <section class="home-hero">
       <div class="hero-copy">
@@ -25,7 +34,8 @@ import AppLayout from '../layouts/AppLayout.astro';
           Build allowlists, blocklists, and vendor ranges in one place. ListIPs validates every line, syncs approved sources, and publishes raw text endpoints that firewalls and scripts can consume without extra glue.
         </p>
         <div class="home-actions">
-          <a class="button primary" href="/login">Login with GitHub</a>
+          <a class="button primary" href="/login/">Login with GitHub</a>
+          <a class="button secondary" href="/docs/">Read the documentation</a>
           <a class="button secondary" href="https://github.com/VIWEB-TECHNOLOGY/ListIPs" rel="noopener noreferrer">Open source on GitHub</a>
         </div>
       </div>
@@ -129,21 +139,6 @@ import AppLayout from '../layouts/AppLayout.astro';
       </div>
     </section>
 
-    <footer class="site-footer">
-      <span>Copyright &copy; {new Date().getFullYear()} ListIPs.</span>
-      <span>By <a href="https://viweb.net" rel="noopener noreferrer">ViWeb Technology</a>.</span>
-    </footer>
+    <MarketingFooter />
   </main>
-
-  <script>
-    const authLink = document.querySelector('#home-auth-link');
-
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then((response) => {
-        if (!response.ok || !(authLink instanceof HTMLAnchorElement)) return;
-        authLink.textContent = 'Dashboard';
-        authLink.href = '/dashboard/';
-      })
-      .catch(() => {});
-  </script>
 </AppLayout>

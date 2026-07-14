@@ -1,0 +1,62 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import MarketingFooter from '../components/MarketingFooter.astro';
+import MarketingHeader from '../components/MarketingHeader.astro';
+
+const breadcrumbJsonLd = {
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://listips.com/' },
+    { '@type': 'ListItem', position: 2, name: 'About', item: 'https://listips.com/about/' }
+  ]
+};
+---
+
+<AppLayout
+  title="About ListIPs - Open Source Firewall List Publishing"
+  description="Learn why ListIPs exists, how its Cloudflare-native publishing architecture works, and where to inspect the open source project."
+  canonicalPath="/about/"
+  jsonLd={[breadcrumbJsonLd]}
+>
+  <main id="main-content" class="home-page">
+    <MarketingHeader current="about" />
+
+    <article class="content-page">
+      <header class="content-hero">
+        <p class="eyebrow">About ListIPs</p>
+        <h1>A small, focused publisher for firewall IP lists.</h1>
+        <p class="lede">ListIPs gives system administrators and DevOps teams one place to validate, synchronize, and publish IP and CIDR lists without building a custom delivery service.</p>
+      </header>
+
+      <section class="prose-section">
+        <p class="eyebrow">Purpose</p>
+        <h2>Why ListIPs exists</h2>
+        <p>Firewall lists often begin as text files copied between machines, scripts, and control panels. That works until validation, source updates, access control, and stable delivery become separate maintenance problems.</p>
+        <p>ListIPs keeps that scope deliberately narrow: accept line-oriented IP data, validate it, combine approved sources, and serve a clean raw artifact over HTTPS.</p>
+      </section>
+
+      <section class="prose-section">
+        <p class="eyebrow">Architecture</p>
+        <h2>Cloudflare-native delivery</h2>
+        <div class="detail-card-grid">
+          <article><h3>Static Astro frontend</h3><p>Public information and the account interface are rendered as lightweight pages.</p></article>
+          <article><h3>Worker API</h3><p>Authentication, validation, list changes, raw delivery, and rate limiting run at the edge.</p></article>
+          <article><h3>D1 and R2 storage</h3><p>D1 stores account and list metadata; R2 stores compiled raw list artifacts.</p></article>
+          <article><h3>Queued synchronization</h3><p>External source updates run in background jobs and publish only validated output.</p></article>
+        </div>
+      </section>
+
+      <section class="prose-section">
+        <p class="eyebrow">Project</p>
+        <h2>Open source and inspectable</h2>
+        <p>The source code, deployment configuration, tests, and architecture notes are available in the public repository. ListIPs is built by <a href="https://viweb.net" rel="noopener noreferrer">ViWeb Technology</a>.</p>
+        <div class="home-actions">
+          <a class="button primary" href="https://github.com/VIWEB-TECHNOLOGY/ListIPs" rel="noopener noreferrer">View the GitHub repository</a>
+          <a class="button secondary" href="/docs/">Read the documentation</a>
+        </div>
+      </section>
+    </article>
+
+    <MarketingFooter />
+  </main>
+</AppLayout>
