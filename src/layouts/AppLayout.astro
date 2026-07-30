@@ -15,15 +15,24 @@ const {
 } = Astro.props;
 const canonicalUrl = new URL(canonicalPath, siteUrl).toString();
 const imageUrl = new URL(image, siteUrl).toString();
+const vmcsoftOrganizationId = 'https://vmcsoft.com/#organization';
+const viwebOrganizationId = 'https://viweb.net/#organization';
 const robots = noindex
   ? 'noindex, follow'
   : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
 const baseStructuredData = [
   {
     '@type': 'Organization',
-    '@id': `${siteUrl}/#organization`,
+    '@id': vmcsoftOrganizationId,
+    name: 'VMCSoft Digital',
+    url: 'https://vmcsoft.com/'
+  },
+  {
+    '@type': 'Organization',
+    '@id': viwebOrganizationId,
     name: 'ViWeb Technology',
-    url: 'https://viweb.net/'
+    url: 'https://viweb.net/',
+    parentOrganization: { '@id': vmcsoftOrganizationId }
   },
   {
     '@type': 'WebSite',
@@ -31,7 +40,7 @@ const baseStructuredData = [
     name: siteName,
     url: `${siteUrl}/`,
     description: defaultDescription,
-    publisher: { '@id': `${siteUrl}/#organization` }
+    publisher: { '@id': viwebOrganizationId }
   }
 ];
 const structuredData = {
