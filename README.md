@@ -23,10 +23,12 @@ ListIPs lets operators create validated plain-text IP lists, optionally sync app
 
 ## Local Development
 
+Use Node.js `24.18.0` from `.nvmrc`; the minimum supported version is `22.23.4`.
+
 Install dependencies:
 
 ```bash
-npm install
+npm ci
 ```
 
 Run the Astro frontend:
@@ -50,8 +52,9 @@ The local Worker needs Cloudflare-compatible bindings. For real deployments, cre
 ```bash
 npm test
 npm run build
-npx tsc -p worker/tsconfig.json
+npm run worker:typecheck
 npm audit --omit=dev
+npm audit
 ```
 
 Production-style raw delivery smoke checks are available once you have configured Cloudflare resources:
