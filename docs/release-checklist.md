@@ -4,10 +4,13 @@ Use this checklist for production Worker or frontend changes.
 
 ## Before Deploy
 
+- Use the pinned Node.js version in `.nvmrc` (`24.18.0`); the minimum supported version is `22.23.4`. CI checks both versions on Linux.
 - Confirm the working tree only contains intended changes: `git status --short`
+- Type-check the Worker: `npm run worker:typecheck`
 - Run worker tests: `npm test`
 - Run the frontend build/type check: `npm run build`
 - Check production dependency advisories: `npm audit --omit=dev`
+- Check the full dependency graph: `npm audit`
 - Audit non-default quota accounts: `npm run quota:audit`
 
 ## Deploy Worker

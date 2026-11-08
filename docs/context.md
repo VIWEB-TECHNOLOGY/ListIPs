@@ -44,6 +44,7 @@ The MVP implementation phases are complete and deployed.
 - Comments are cut to 100 characters before publication.
 - Raw output contains only sanitized `#` comments and valid IPv4, IPv6, IPv4 CIDR, or IPv6 CIDR lines.
 - External sources are restricted to `*.cloudflare.com`, `*.githubusercontent.com`, and `*.amazonaws.com`.
+- External source reads enforce a 256 KiB limit on streamed bytes and an eight-second deadline through body consumption. Failed syncs preserve previously published content and metadata.
 - Saving a list with enabled external sources queues a background sync for that list on Cloudflare Queue `listips-external-sync`.
 - The dashboard no longer has a permanent manual sync button; Save reports when an external source sync is queued.
 - Queue dedupe is DB-backed: a list marked `last_sync_status = 'queued'` will not enqueue another Save-triggered sync until the pending job finishes or fails.

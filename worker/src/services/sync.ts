@@ -4,6 +4,7 @@ import { isAllowedExternalSource } from '../validation/source';
 import { logEvent } from './observability';
 import { putCompiledList } from './compiled-list-store';
 import { RequestError } from './response';
+import { fetchSource } from './external-source';
 
 interface SyncRow extends ListRow {
   username: string;
@@ -201,35 +202,6 @@ async function recordSyncFailure(env: Env, row: SyncRow, error: unknown, trigger
     errorMessage: safeLogMessage(message),
     force: true
   });
-}
-
-async function fetchSource(url: string): Promise<string> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
-  try {
-    const response = await fetch(url, {
-      redirect: 'manual',
-      signal: controller.signal,
-      headers: { Accept: 'text/plain,*/*;q=0.1' }
-    });
-
-    if (!response.ok) throw new Error(`Fetch failed with status ${response.status}`);
-
-    const contentType = response.headers.get('Content-Type') ?? '';
-    if (contentType && !contentType.includes('text/plain') && !contentType.includes('application/octet-stream')) {
-      throw new Error(`Unsupported content type: ${contentType}`);
-    }
-
-    const text = await response.text();
-    if (new TextEncoder().encode(text).byteLength > 262144) {
-      throw new Error('Source response exceeds 256 KB.');
-    }
-
-    return text;
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 async function compileFetchedContent(content: string, itemLimit: number) {

@@ -8,8 +8,11 @@ on:
 
 jobs:
   test:
-    name: Test and build
+    name: Test and build (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22.23.4, 24.18.0]
 
     steps:
       - name: Check out repository
@@ -18,11 +21,14 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Type-check Worker
+        run: npm run worker:typecheck
 
       - name: Run worker tests
         run: npm test
@@ -31,4 +37,7 @@ jobs:
         run: npm run build
 
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=moderate
+        run: npm audit --omit=dev
+
+      - name: Audit all dependencies
+        run: npm audit
