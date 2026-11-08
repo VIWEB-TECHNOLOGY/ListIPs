@@ -34,6 +34,7 @@ The MVP implementation phases are complete and deployed.
 ## Current Product Rules
 
 - GitHub OAuth is the primary login method.
+- Operators with D1 write access can issue a test session for the reserved `viweb-technology` smoke fixture. The Worker accepts this token format only for that active, non-admin smoke identity at default-or-lower quotas, with an issuance age and lifetime of at most 15 minutes. Token creation is an administrative database operation; ordinary logout revokes the session.
 - Google OAuth is a later optional provider.
 - The production frontend uses the dark blue ListIPs UI refresh with brand assets served from `public/images/`.
 - Private lists use one-time-visible tokenized raw URLs.

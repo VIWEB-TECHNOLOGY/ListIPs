@@ -32,7 +32,10 @@ export async function getAuthContext(request: Request, env: Env): Promise<AuthCo
   const token = parseCookies(request).get('li_session') ?? bearerToken(request);
   if (!token) return null;
 
-  const tokenHash = await sha256Hex(`${env.SESSION_SECRET}:${token}`);
+  const operatorTestSession = /^test_sess_[a-f0-9]{64}$/.test(token);
+  const tokenHash = operatorTestSession
+    ? `test:${await sha256Hex(token)}`
+    : await sha256Hex(`${env.SESSION_SECRET}:${token}`);
   const row = await env.DB.prepare(
     `SELECT
       sessions.id AS session_id,
@@ -50,8 +53,21 @@ export async function getAuthContext(request: Request, env: Env): Promise<AuthCo
     FROM sessions
     JOIN users ON users.id = sessions.user_id
     WHERE sessions.token_hash = ?
-      AND sessions.expires_at > datetime('now')`
-  ).bind(tokenHash).first<User & { session_id: string; last_seen_at: string | null }>();
+      AND sessions.expires_at > datetime('now')
+      AND (? = 0 OR (
+        substr(sessions.id, 1, 9) = 'testsign_'
+        AND users.id = 'usr_smoke_viweb_technology'
+        AND users.username = 'viweb-technology'
+        AND users.auth_provider = 'smoke'
+        AND users.role = 'user'
+        AND users.status = 'active'
+        AND users.list_quota <= 100
+        AND users.item_quota_per_list <= 500
+        AND sessions.created_at >= datetime('now', '-15 minutes')
+        AND sessions.created_at <= datetime('now')
+        AND sessions.expires_at <= datetime(sessions.created_at, '+15 minutes')
+      ))`
+  ).bind(tokenHash, operatorTestSession ? 1 : 0).first<User & { session_id: string; last_seen_at: string | null }>();
 
   if (!row) return null;
 
